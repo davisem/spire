@@ -12,7 +12,7 @@ __modname__ = 'calc_jaccard'
 
 import sys
 import numpy as np
-
+from collections import defaultdict
 from abc import ABCMeta, abstractmethod
 
 
@@ -34,6 +34,19 @@ class KMERPairFactory(object):
 				    pairs[ab] = d
 
 		return pairs
+
+class KMERize(object):
+
+	@staticmethod
+	def create(w, k):
+		
+		kmers = defaultdict(list)
+		
+		for i in xrange(len(w) - k + 1):
+			kmers[w[i: i + k]].append(i)
+
+		return kmers
+
 
 
 class IHasher(object):
@@ -76,7 +89,7 @@ class Hasher(IHasher):
 		:param int x: The input value to hash.
 		:return int: The hash value.
 		"""
-		return ((self._a * x) + self._b) % self._c
+		return (x + self._b) % self._c
 
 
 class HashFactory(object):
@@ -106,7 +119,7 @@ class HashFactory(object):
 		Seed ensures the randomness is deterministic.
 		"""
 		
-		randoms = np.random.RandomState(seed=self._seed).randint(self.MININT, self.MAXINT, self.n_hashes)
+		randoms = np.random.RandomState(seed=self._seed).randint(self.MININT, self.MAXINT, self.n_hashes * 2)
 		
 		for i in range(len(randoms) - 2):
 			a, b = randoms[i: i + 2]
@@ -164,12 +177,15 @@ class MinHash(object):
 		return float(sum(sig1 == sig2)) / float(self._n_hashes)
 
 
+
+
+
 def workflow():
 	"""Just do something for sanity check"""
 	
 	#Some test sequences
-	seq1 = 'AAAAATTTTTTTTTCCCCCCCCC'
-	seq2 = 'AAAAATTTTTTTTTCCCCCCCCC'
+	seq1 = 'AAAAATTTTTTTTTCCCCCCCCC'* 100
+	seq2 = 'AAAAATTTTTTTTTCCCCCCCCC'* 99 + 'AAAAATTCCCTTTTCCCCCCCCC'
 	
 	#Make our random hashing functions
 	seed = 10
@@ -179,12 +195,11 @@ def workflow():
 	m_hasher = MinHash(h_funcs=hashes)
 
 	#Make some kmers from the test sequences
-	seq1_kmers = KMERPairFactory.create(seq1, 4)
-	seq2_kmers = KMERPairFactory.create(seq2, 4)
+	seq1_kmers = KMERPairFactory.create(seq1, 10)
+	seq2_kmers = KMERPairFactory.create(seq2, 10)
 	
 	# Get signatures from the kmers
 	signature_1 = m_hasher.calcMinHash(seq1_kmers)
-	print signature_1
 	signature_2 = m_hasher.calcMinHash(seq2_kmers)
 
 	#3lau
