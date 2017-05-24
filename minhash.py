@@ -6,14 +6,6 @@ num_buckets = 2**32
 cpu = "/cpu:0"
 
 
-def create_sparse_vec(word_list):
-    num_words = len(word_list)
-    indices = [[xi, 0, yi] for xi,x in enumerate(word_list) for yi,y in enumerate(x)]
-    chars = list(''.join(word_list))
-    return tf.SparseTensorValue(indices, chars, [num_words,1,1])
-
-
-
 minhash = range(num_hashes)
 
 with tf.device(cpu):
@@ -25,16 +17,39 @@ with tf.device(cpu):
         hashed_kmers = tf.scalar_mul( 0x1234567887654321, hashed_kmers)
         hashed_kmers = 0x1234567887654321 + hashed_kmers
     minhash[num_hashes-1] = tf.argmin( hashed_kmers )
-
+ 
 def MinHash(A):
     with tf.Session(config=tf.ConfigProto(log_device_placement=False)) as sess:
-        my_minhash, my_original_hashed_kmers  = sess.run( [minhash, original_hashed_kmers],  feed_dict={kmers: A} )
-        return my_original_hashed_kmers[my_minhash]
+        my_minhash, A_strings = sess.run( [minhash,kmers],  feed_dict={kmers: A} )
+    return A_strings[my_minhash]
 
 def Jaccard(A,B):
-    hA = MinHash(A)
-    hB = MinHash(B)
+    hA = MinHash(A.keys())
+    hB = MinHash(B.keys())
+    print hA,hB
     return sum(hA==hB)*1.0/num_hashes
+
+def Jaccardt(A,B,t):
+    s = 0
+    hA = MinHash(A.keys())
+    hB = MinHash(B.keys())
+    for i in range(num_hashes) :
+        if (hA[i] == hB[i]) and ( abs(A[hA[i]] - B[hB[i]]) < t ):
+            s += 1
+    return s*1.0/num_hashes     
+
+
+def JaccardRange( A, B, tmin, tmax ):
+    
+    hA = MinHash(A.keys())
+    hB = MinHash(B.keys())
+    for t in range(tmin,tmax) : 
+        s = 0
+        for i in range(num_hashes) :
+            if (hA[i] == hB[i]) and ( abs(A[hA[i]] - B[hB[i]]) < t ):
+                s += 1
+        print s*1.0/num_hashes
+    return s*1.0/num_hashes
 
 def CreateWindow( wl ):
     window = ""
@@ -57,7 +72,7 @@ def CreateKMERPairs ( w, k ):
             a = w[i:i+k]
             b = w[j:j+k]
             d = j - i
-            ab= a+b
+            ab= a+","+b+":"
             if ab in kmerpairs:
                 kmerpairs[ab] = min(d,kmerpairs[ab])
             else :
@@ -76,10 +91,13 @@ def CreateKMERPairsThreshold ( kmers, t ):
 
 
 
-w1 = CreateWindow( 5000 )
-kmers1 = CreateKMERPairs ( w1, 8 )
-w2 = CreateWindow( 5000 )
-kmers2 = CreateKMERPairs ( w2, 8 )
+w1 = CreateWindow( 500 )
+kmers1 = CreateKMERPairs ( w1, 5 )
+w2 = CreateWindow( 500 )
+kmers2 = CreateKMERPairs ( w2, 5 )
 kmers1t = CreateKMERPairsThreshold ( kmers1, 5 )
 kmers2t = CreateKMERPairsThreshold ( kmers2, 5 )
-print Jaccard(kmers1t.keys(),kmers2t.keys())
+print Jaccard(kmers1t,kmers2t)
+print Jaccardt(kmers1, kmers2, 10 )
+JaccardRange(kmers1, kmers2, 5, 490 )
+
