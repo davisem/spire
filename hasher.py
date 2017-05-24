@@ -6,8 +6,8 @@ __credits__ = ["Eric Davis"]
 __version__ = ""
 __maintainer__ = "Eric Davis"
 __email__ = "emdavis48@gmail.com"
-__status__ = "wat wat"
-__modname__ = 'calc_jaccard'
+__status__ = ""
+__modname__ = 'hasher'
 
 import numpy as np
 
