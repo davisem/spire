@@ -12,116 +12,11 @@ __modname__ = 'calc_jaccard'
 
 import sys
 import numpy as np
-
+from collections import defaultdict
 from abc import ABCMeta, abstractmethod
 
-
-class KMERPairFactory(object):
-	"""Class for enumerating kmers from a window, c/o Patrick"""
-
-	@staticmethod
-	def create(w, k):
-		pairs = {}
-		for i in range (len(w) - k):
-			for j in range (i + 1, len(w) - k):
-				a = w[i:i + k]
-				b = w[j:j + k]
-				d = j - i
-				ab = a + b
-				if ab in pairs:
-				    pairs[ab] = min(d, pairs[ab])
-				else :
-				    pairs[ab] = d
-
-		return pairs
-
-
-class IHasher(object):
-	"""
-	Base class for a hash function
-	"""
-	
-	__metaclass__ = ABCMeta
-
-	def __call__(self, x):
-		"""
-		Make the class callable
-		:param x: the value to hash.
-		:return int: The hash value of the input.
-		"""
-		
-		return self.hashIt(x)
-
-	@abstractmethod		
-	def hashIt(self, x):
-		"""
-		To be implemented by child classes.
-		"""
-		pass
-
-
-class Hasher(IHasher):
-	"""Some hashing function"""
-	
-	__slots__ = ['a', 'b']
-
-	def __init__(self, a, b):
-		self._a = a
-		self._b = b
-		self._c = max(a, b) - 100
-
-	def hashIt(self, x):
-		"""
-		Hashes the input.
-		:param int x: The input value to hash.
-		:return int: The hash value.
-		"""
-		return ((self._a * x) + self._b) % self._c
-
-
-class HashFactory(object):
-	"""
-	h(x) = (ax + b) % c
-	such that a and b are random ints < x. 
-	"""
-
-	MININT = np.iinfo(np.int32).min
-	MAXINT = np.iinfo(np.int32).max
-
-	def __init__(self, ihasher, n_hashes, seed):
-		"""
-		Init method for class
-		:param IHasher ihasher: A class implementing the ihasher interface
-		:param int n_hashes: How many random hashes to make
-		:param int seed: Seed for random number generation
-		"""
-		
-		self.ihasher = ihasher
-		self.n_hashes = n_hashes
-		self._seed =  seed
-
-	def getRandomInts(self):
-		"""
-		Makes a pair of random integers. 
-		Seed ensures the randomness is deterministic.
-		"""
-		
-		randoms = np.random.RandomState(seed=self._seed).randint(self.MININT, self.MAXINT, self.n_hashes)
-		
-		for i in range(len(randoms) - 2):
-			a, b = randoms[i: i + 2]
-			yield a, b
-
-	def getHashes(self):
-		"""
-		Returns instances of random hashing classes.
-		:return list(IHasher): a list of IHasher instances.
-		"""
-		h_funcs = []
-		for a, b in self.getRandomInts():
-			 h_funcs.append(self.ihasher(a, b))
-		
-		return h_funcs
+from hasher import HashFactory, Hasher
+from kmerize import KMERPairFactory, KMERSingleFactory
 
 
 class MinHash(object):
@@ -138,11 +33,11 @@ class MinHash(object):
 
 
 	def calcMinHash(self, data):
-		"""Where the magic happens"""
+		"""
+		Where the magic happens
+		:param list data: A list of integer hashes to recieve a second random hashing"""
 		
 		signature = []
-		
-		data = self.getData(data)
 		
 		for hasher in self._hfuncs:
 			#This is why it's called MinHash :D
@@ -152,24 +47,48 @@ class MinHash(object):
 		
 		return np.array(signature)
 
-	@staticmethod
-	def getData(kmer_pairs):
-		"""Formats the kmer_pair, distance dict into a list of inter values"""
 
-		return [hash(keys+str(distances)) for keys, distances in kmer_pairs.iteritems()]
+class FullSignatureWorkflow(object):
+	IKMER_FACTORY = KMERPairFactory
+	SEED = 10
+	
+	def __init__(self, kmer_size, n_hash_functions):
+		self._n_hash_functions = n_hash_functions
+		self._kmer_size = kmer_size
+
+	def flow(self, seq):
+		#Set everything up
+		hash_factory = HashFactory(Hasher, self._n_hash_functions, self.SEED)
+		hashes = hash_factory.getHashes()
+		m_hasher = MinHash(h_funcs=hashes)
+
+		#Now calculate
+		hashed_values = self.IKMER_FACTORY().create(seq, self._kmer_size)
+		return m_hasher.calcMinHash(hashed_values)
+
 
 	def getJaccard(self, sig1, sig2):
 		"""Actually calculates the Jaccard index"""
 
 		return float(sum(sig1 == sig2)) / float(self._n_hashes)
 
+class FastSignatureWorkflow(object):
+	
+	IKMER_FACTORY = KMERSingleFactory
+
+	def __init__(self, ikmer_factory=IKMER_FACTORY):
+		self._ikmer_factory = ikmer_factory
+
+	def flow(self):
+		pass
+
 
 def workflow():
 	"""Just do something for sanity check"""
 	
 	#Some test sequences
-	seq1 = 'AAAAATTTTTTTTTCCCCCCCCC'
-	seq2 = 'AAAAATTTTTTTTTCCCCCCCCC'
+	seq1 = 'AAAAATTTTTTTTTCCCCCCCCC'* 100
+	seq2 = 'AAAAATTTTTTTTTCCCCCCCCC'* 99 + 'AAAAATTCCCTTTTCCCCCCCCC'
 	
 	#Make our random hashing functions
 	seed = 10
@@ -179,12 +98,11 @@ def workflow():
 	m_hasher = MinHash(h_funcs=hashes)
 
 	#Make some kmers from the test sequences
-	seq1_kmers = KMERPairFactory.create(seq1, 4)
-	seq2_kmers = KMERPairFactory.create(seq2, 4)
+	seq1_kmers = KMERPairFactory.create(seq1, 10)
+	seq2_kmers = KMERPairFactory.create(seq2, 10)
 	
 	# Get signatures from the kmers
 	signature_1 = m_hasher.calcMinHash(seq1_kmers)
-	print signature_1
 	signature_2 = m_hasher.calcMinHash(seq2_kmers)
 
 	#3lau
