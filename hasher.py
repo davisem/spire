@@ -7,39 +7,26 @@ __version__ = ""
 __maintainer__ = "Eric Davis"
 __email__ = "emdavis48@gmail.com"
 __status__ = ""
-__modname__ = 'hasher'
+__modname__ = 'hasher.py'
 
 import numpy as np
 
-class Hasher(IHasher):
-	"""Some hashing function"""
-	
-	__slots__ = ['a', 'b']
-
-	def __init__(self, a, b):
-		self._a = a
-		self._b = b
-		self._c = max(a, b) - 100
-
-	def hashIt(self, x):
-		"""
-		Hashes the input.
-		:param int x: The input value to hash.
-		:return int: The hash value.
-		"""
-		return (x + self._b) % self._c
+import pyximport; pyximport.install()
+from long_read_aligner.cython.chash import Hasher
 
 
 class HashFactory(object):
 	"""
+	Class for generating perumations of a hashing object.
 	h(x) = (ax + b) % c
 	such that a and b are random ints < x. 
 	"""
 
 	MININT = np.iinfo(np.int32).min
 	MAXINT = np.iinfo(np.int32).max
+	SEED = 10
 
-	def __init__(self, ihasher, n_hashes, seed):
+	def __init__(self, ihasher, n_hashes):
 		"""
 		Init method for class
 		:param IHasher ihasher: A class implementing the ihasher interface
@@ -49,7 +36,6 @@ class HashFactory(object):
 		
 		self.ihasher = ihasher
 		self.n_hashes = n_hashes
-		self._seed =  seed
 
 	def getRandomInts(self):
 		"""
@@ -57,11 +43,11 @@ class HashFactory(object):
 		Seed ensures the randomness is deterministic.
 		"""
 		
-		randoms = np.random.RandomState(seed=self._seed).randint(self.MININT, self.MAXINT, self.n_hashes * 2)
+		randoms = np.random.RandomState(seed=self.SEED).randint(self.MININT, self.MAXINT, self.n_hashes + 1)
 		
-		for i in range(len(randoms) - 2):
-			a, b = randoms[i: i + 2]
-			yield a, b
+		for i in xrange(self.n_hashes):
+			random_ints = randoms[i: i + 2]
+			yield random_ints
 
 	def getHashes(self):
 		"""
