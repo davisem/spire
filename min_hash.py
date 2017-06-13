@@ -138,12 +138,3 @@ class SignatureDirector(object):
 			kmer_pairs.extend(window.makeKmerPairs(min_kmer))
 
 		return self._min_hash.calcSignature(kmer_pairs)
-
-
-
-
-		
-
-
-
-
