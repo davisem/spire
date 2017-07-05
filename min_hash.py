@@ -12,11 +12,14 @@ __modname__ = "min_hash.py"
 import sys
 import numpy as np
 import operator
-from collections import defaultdict
+from collections import defaultdict, Counter
 from abc import ABCMeta, abstractmethod
 
-from hasher import HashFactory, Hasher
-from kmer import Kmer, Window
+from hasher import HashFactory
+from kmer import Kmer, Window, Read
+
+import pyximport; pyximport.install()
+from cython.chash import Hasher
 
 
 class MinHash(object):
@@ -31,28 +34,30 @@ class MinHash(object):
 		self._hash_permutations = HashFactory(Hasher, n_hash_functions).getHashes()
 
 	@staticmethod
-	def getMinimumHash(hashes):
-		return min(filter(lambda x: x != 0, hashes))
+	def getMinimumHash(hashes_kmer):
+		return min(hashes_kmer, key=operator.itemgetter(0))
 
-	def calcSignature(self, kmers):
+	def calcSketch(self, kmers):
 		"""
-		Calculates a minhash signature given a set of kmers.
+		Calculates a minhash Sketch given a set of kmers.
 		:param list(Kmer) kmers: a list of Kmer instances
-		:return list(int) signature: A list representing a minhash signature
+		:return list(int) Sketch: A list representing a minhash Sketch
 		"""
 		
-		signature = []
+		sketch = []
 
 		for hasher in self._hash_permutations:
-			hashes = [hasher(x) for x in kmers]
+			
+			hashes = [(hasher.hashIt(kmer.integer_val), kmer) for kmer in kmers]
 			min_hash = self.getMinimumHash(hashes)
-			signature.append(min_hash)
+			
+			sketch.append(min_hash)
 		
-		return signature
+		return sketch
 
 	def approximateJaccard(self, sig1, sig2):
 		"""
-		Calculate an approximate Jaccard index based on minhash signatures
+		Calculate an approximate Jaccard index based on minhash Sketchs
 		TODO: Assert that sig1 and sig2 were calculated with the same hash functions, otherwise
 		the approimation is invalid.
 		:param list(int) sig1:
@@ -64,77 +69,99 @@ class MinHash(object):
 		return float(sum(sig1 == sig2)) / float(self._n_hash_functions)
 
 
-class LoggingMinHash(MinHash):
-	"""
-	Class for calculating a min hash signature. Implements logging capabilities to back-lookup original input values
-	prior to hashing. This removes the need to calculate all kmer pairs and distances exhaustively, which is a 
-	quadratic operation. Alot of book keeping going on here.
-	"""
+class SketchDirector(object):
+	"""Flow control for generating minhash Sketchs for a given sequence"""
 
-	def __init__(self, n_hash_functions):
-		super(LoggingMinHash, self).__init__(n_hash_functions)
-		self.hash_to_kmer = {}
+	__metaclass__ = ABCMeta
 
-	def setHashToKmer(self, min_hash_to_int):
-		"""Updates the hash to int map of the instance"""
-		self.hash_to_kmer.update(min_hash_to_int)
-
-	def getKmer(self, min_hash):
-		"""
-		Gets the kmer string given the minhash value.
-		"""
-		return self.hash_to_kmer[min_hash]
-
-	@staticmethod
-	def getMinimumHash(hashes_kmer):
-		return min(hashes_kmer, key=operator.itemgetter(0))
-
-	def calcSignature(self, kmers):
-		"""
-		Calculates a minhash signature given a set of kmers.
-		:param list(Kmer) kmers: A list of Kmers instances
-		"""
-
-		primary_signature = []
-
-		for hasher in self._hash_permutations:
-
-			hashes = [(hasher.hashIt(x.integer_val), x) for x in kmers if x.integer_val!=0]
-			
-			min_hash = self.getMinimumHash(hashes)
-			
-			primary_signature.append(min_hash[0])
-			
-			self.hash_to_kmer[min_hash[0]] = min_hash[1]
-
-		return primary_signature
-
-
-class SignatureDirector(object):
-	"""Flow control for generating minhash signatures for a given sequence"""
-
-	def __init__(self, word_size, n_hashing_functions):
+	def __init__(self, word_size, n_hashing_functions, hasher):
 		"""
 		Init method for class
 		:param int word_size: The kmer size to use
-		:param int n_hashing_functions: The number of hashing functions to use.
+		:param n_hashing_functions: The number of hashing functions to use.
 		"""
 		self.word_size = word_size
-		self._min_hash = LoggingMinHash(n_hashing_functions)
+		self._n_hashing_functions = n_hashing_functions
+		self._min_hash = hasher(n_hashing_functions)
+		self._Sketch_cache = {x:defaultdict(list) for x in xrange(n_hashing_functions)}
 
-	def getSignature(self, seq):
+	def run(self, seq):
+		Sketch = self.getSketch(seq)
+		self.storeSketch(seq, Sketch)
+
+	def storeSketch(self, seq, Sketch):
+		for i, min_mer in enumerate(Sketch):
+			self._Sketch_cache[i][min_mer].append(seq)
+
+	def querryRead(self, Sketch):
+		for i, min_mer in enumerate(Sketch):
+			yield self._Sketch_cache[i][min_mer]
+
+	def getSimilarReads(self, read):
+		
+		similar_reads = []
+		for q_read_list in self.querryRead(read.sketch):
+			for q_read in q_read_list:
+				if q_read != read.seq:
+					similar_reads.append(q_read)
+		
+		return Counter(similar_reads)
+
+
+class GreedyPairSketchDirector(SketchDirector):
+
+
+	def __init__(self, word_size, n_hashing_functions, hasher):
+		super(GreedyPairSketchDirector, self).__init__(word_size, n_hashing_functions, hasher)
+	
+	def getSketch(self, seq):
 		"""
-		Gets the minhash signature for a given sequence
+		Gets the minhash Sketch for a given sequence
 		:param str seq: A DNA sequence
-		:return list(int): A list representing the minhash signature
+		:return list(int): A list representing the minhash Sketch
 		"""
 		
-		window = Window(seq, self.word_size)
-		primary_signature = self._min_hash.calcSignature(window.kmers)
+		window = Window(seq, self.word_size, 2)
+		
+		primary_Sketch = self._min_hash.calcSketch(window.kmers)
 		kmer_pairs = []
 		
-		for min_hash in primary_signature:
-			min_kmer = self._min_hash.getKmer(min_hash)
-			kmer_pairs.extend(window.makeKmerPairs(min_kmer))
+		for min_hash in primary_Sketch:
+			kmer_pairs.extend(window.makeKmerPairs(min_hash[1]))
+		
+		return [x[0] for x in self._min_hash.calcSketch(kmer_pairs)]
 
-		return self._min_hash.calcSignature(kmer_pairs)
+
+class SingleSketchDirector(SketchDirector):
+	
+	def __init__(self, word_size, n_hashing_functions, hasher):
+		super(SingleSketchDirector, self).__init__(word_size, n_hashing_functions, hasher)
+
+	def getSketch(self, seq):
+		"""
+		Gets the minhash Sketch for a given sequence
+		:param str seq: A DNA sequence
+		:return list(int): A list representing the minhash Sketch
+		"""
+		window = Window(seq, self.word_size, 1)
+		return [x[0] for x in self._min_hash.calcSketch(window.kmers)]
+
+
+class ExhaustivePairSketchDirector(SketchDirector):
+
+	def __init__(self, word_size, n_hashing_functions, hasher):
+		super(ExhaustivePairSketchDirector, self).__init__(word_size, n_hashing_functions, hasher)
+
+
+	def getSketch(self, seq):
+		"""
+		Gets the minhash Sketch for a given sequence
+		:param str seq: A DNA sequence
+		:return list(int): A list representing the minhash Sketch
+		"""
+		
+		window = Window(seq, self.word_size, 2)
+		
+	
+		pairs = [pair for kmer in window.kmers for pair in window.makeKmerPairs(kmer)]
+		return [x[0] for x in self._min_hash.calcSketch(pairs)]

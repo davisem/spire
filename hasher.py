@@ -11,8 +11,6 @@ __modname__ = 'hasher.py'
 
 import numpy as np
 
-import pyximport; pyximport.install()
-from long_read_aligner.cython.chash import Hasher
 
 
 class HashFactory(object):
