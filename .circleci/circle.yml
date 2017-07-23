@@ -4,8 +4,11 @@ machine:
 
 dependencies:
   override:
-    - pip install -r requirements.txt
-    
+    - pip install --upgrade pip
+    - pip install Cython --install-option="--no-cython-compile"
+    - pip install numpy
+    - pip install nosetests
+
 test:
   override:
     nosetests -s tests/kmer_tests.py
