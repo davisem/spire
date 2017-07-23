@@ -4,7 +4,8 @@ machine:
 
 
 dependencies:
-  override:
+  pre:
+    - sudo apt-get update; sudo apt-get install gcc-5
     - pip install --upgrade pip
     - pip install Cython --install-option="--no-cython-compile"
     - pip install numpy
