@@ -1,0 +1,9 @@
+deployment:
+  production:
+    branch:master
+    commands:
+      python setup.py
+      
+test:
+  override:
+    nosetests -s tests/kmer_tests.py
