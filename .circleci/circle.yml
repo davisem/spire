@@ -4,7 +4,11 @@ machine:
 
 dependencies:
   override:
-    - echo "Trying to override this"
+    - pip install --upgrade pip
+    - pip install Cython --install-option="--no-cython-compile"
+    - pip install numpy
+    - pip install nosetests
+    - python hashers/setup.py build_ext --inplace
 
 test:
   override:
