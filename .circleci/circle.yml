@@ -1,9 +1,17 @@
+machine:
+  python:
+    version: 2.7.10
+
+dependencies:
+  override:
+    - pip install -r requirements.txt
+
 deployment:
   production:
     branch:master
     commands:
       python setup.py build_ext --inplace
-      
+
 test:
   override:
     nosetests -s tests/kmer_tests.py
