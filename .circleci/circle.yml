@@ -7,12 +7,8 @@ machine:
 
 
 dependencies:
-  pre:
-    - pip install --upgrade pip
-    - pip install Cython --install-option="--no-cython-compile"
-    - pip install numpy
-    - pip install nosetests
-
+  override:
+    - echo "Trying to override this"
 
 test:
   override:
