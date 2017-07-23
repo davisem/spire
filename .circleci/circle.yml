@@ -3,7 +3,7 @@ machine:
     - sudo apt-get install build-essentials
 
 dependencies:
-  override:
+  pre:
     - pip install --upgrade pip
     - pip install Cython --install-option="--no-cython-compile"
     - pip install numpy
