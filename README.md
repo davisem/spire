@@ -1,3 +1,5 @@
+[![CircleCI](https://circleci.com/gh/davisem/spire.svg?style=svg)](https://circleci.com/gh/davisem/spire/master)
+
 Spire
 =========================
 An experimental, long read genome-assembler that leverages k-mer pairs along with distance information to map highly error-prone reads from long read sequencing platforms with high fidelity.
