@@ -17,13 +17,16 @@ Clone Github Repository
 -----------------------
 ```
 $ git clone https://github.com/davisem/spire.git
-$ cd long_read_aligner
+$ cd spire
 ```
 
 Setup
 ------------------
 ```
-$ python setup.py
+$ virtualenv venv
+$ source venv/bin/activate
+$ pip install cython numpy
+$ python setup.py build_ext --inplace
 ```
 
 Usage
