@@ -17,12 +17,12 @@ from utils.string_utils import PerturbWindow
 
 def parse_cmdline_params(cmdline_params):
     
-    info = "Calculate a Jaccard index for a querry sequence against a reference"
+    info = "Calculate a Jaccard index for a query sequence against a reference"
     
     parser = argparse.ArgumentParser(description=info)
     
     parser.add_argument('-q', '--query_string', type=str, required=True,
-                        help='Provide a querry string')
+                        help='Provide a query string')
 
     parser.add_argument('-r', '--reference_sequence', type=str, required=True,
     					help='Please provide a reference string')
@@ -62,9 +62,9 @@ class Spire(object):
 	def loadRefSignature(self, ref):
 		self.ref_signature = self._calculator.run(ref)
 
-	def getJaccard(self, querry_sequence):
-		querry_signature = self._calculator.run(querry_sequence)
-		return self.approximateJaccard(self.ref_signature, querry_signature)
+	def getJaccard(self, query_sequence):
+		query_signature = self._calculator.run(query_sequence)
+		return self.approximateJaccard(self.ref_signature, query_signature)
 
 	def approximateJaccard(self, sig1, sig2):
 		"""
@@ -87,5 +87,5 @@ if __name__ == '__main__':
 	spire = Spire(opts.word_size, opts.n_hashing_functions, opts.mode)
 	spire.loadRefSignature(opts.reference_sequence)
 
-	jaccard = spire.getJaccard(opts.querry_string)
+	jaccard = spire.getJaccard(opts.query_string)
 	print jaccard
