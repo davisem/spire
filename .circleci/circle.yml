@@ -8,7 +8,3 @@ dependencies:
     - pip install Cython --install-option="--no-cython-compile"
     - pip install numpy
     - python hashers/setup.py build_ext --inplace
-
-test:
-  override:
-    - python spire.py -q ATCGGATCGAATCG -r ATCGATCGATCGATCG -k 3 -m deep -n 500
