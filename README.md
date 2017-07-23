@@ -1,4 +1,4 @@
-[![CircleCI](https://circleci.com/gh/davisem/spire.svg?style=svg)](https://circleci.com/gh/davisem/spire/master)
+[![CircleCI](https://circleci.com/gh/davisem/spire.svg?style=shield)](https://circleci.com/gh/davisem/spire/master)
 
 Spire
 =========================
