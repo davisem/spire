@@ -1,10 +1,6 @@
 machine:
   pre:
     - sudo apt-get install build-essentials
-  
-  python:
-    version: 2.7.10
-
 
 dependencies:
   override:
