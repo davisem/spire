@@ -12,4 +12,4 @@ dependencies:
 
 test:
   override:
-    nosetests -s tests/kmer_tests.py
+    - python spire.py -q ATCGGATCGAATCG -r ATCGATCGATCGATCG -k 3 -m deep -n 500
