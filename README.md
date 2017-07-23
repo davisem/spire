@@ -30,13 +30,13 @@ Usage
 $ python spire.py -q ATCGGATCGAATCG -r ATCGATCGATCGATCG -k 3 -m deep -n 300
 ```
 
-Pipeline Options
+Options
 ----------------
 Option | Description
 --------- | -----------
 help | `Display help message.`
 reference | `A reference string to search against`
-querry_string| `A string to compare to the reference`
+query_string| `A string to compare to the reference`
 n_hashing_functions | `Number of random hashing functions to use`
 word_size | `Word size with which input strings will be enumerated`
 mode | `[Fast, Deep] Whether to enumerate kmers or kmer-pairs`

@@ -21,7 +21,7 @@ def parse_cmdline_params(cmdline_params):
     
     parser = argparse.ArgumentParser(description=info)
     
-    parser.add_argument('-q', '--querry_string', type=str, required=True,
+    parser.add_argument('-q', '--query_string', type=str, required=True,
                         help='Provide a querry string')
 
     parser.add_argument('-r', '--reference_sequence', type=str, required=True,
