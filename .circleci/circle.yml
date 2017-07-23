@@ -2,7 +2,7 @@ deployment:
   production:
     branch:master
     commands:
-      python setup.py
+      python setup.py build_ext --inplace
       
 test:
   override:
