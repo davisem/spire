@@ -7,7 +7,6 @@ dependencies:
     - pip install --upgrade pip
     - pip install Cython --install-option="--no-cython-compile"
     - pip install numpy
-    - python hashers/setup.py build_ext --inplace
     - python setup.py build_ext --inplace
 
 test:
