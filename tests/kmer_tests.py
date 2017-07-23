@@ -12,7 +12,7 @@ __modname__ = 'kmer_tests.py'
 
 import unittest
 
-from long_read_aligner.kmer import Kmer, Window
+from kmer import Kmer, Window
 
 
 class TestKmer(unittest.TestCase):
