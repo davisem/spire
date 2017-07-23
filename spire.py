@@ -10,8 +10,9 @@ __status__ = "to the moon"
 
 import argparse
 import sys
+import numpy as np
 from min_hash import MinHash
-from sketch_directors import GreedyPairSketchDirector, SingleSketchDirector, ExhaustivePairSketchDirector
+from sketch_calculators import GreedyPairSketchCalculator, SingleSketchCalculator, ExhaustivePairSketchCalculator
 from utils.string_utils import PerturbWindow
 
 def parse_cmdline_params(cmdline_params):
@@ -34,24 +35,57 @@ def parse_cmdline_params(cmdline_params):
 
     parser.add_argument('-k', '--word_size', type=int, help="kmer_size")
 
-    parser.add_argument('-m', '--mode', type=str, choices = ['greedy', 'fast', 'deep'], 
-    					default='fast', help="The algorithm to generate the kmer-pair scheme")
+    parser.add_argument('-m', '--mode', type=str, choices=['greedy', 'fast', 'deep'], 
+    					default='fast', help="The algorithm to generate the kmer strings for hashing")
 
     return parser.parse_args(cmdline_params)
 
+
+class Spire(object):
+	
+	"""This is where the magic happens"""
+
+	CALCULATORS = [SingleSketchCalculator, ExhaustivePairSketchCalculator]
+
+	def __init__(self, word_size, n_hash_functions, mode):
+		
+		self._word_size = word_size
+		self._n_hash_functions = n_hash_functions
+		self._calculator = self.setMode(mode)
+		self.ref_signature = None
+
+	def setMode(self, mode):
+		for calculator in self.CALCULATORS:
+			if calculator.canCalculate(mode):
+				return calculator(self._word_size, self._n_hash_functions, MinHash)
+
+	def loadRefSignature(self, ref):
+		self.ref_signature = self._calculator.run(ref)
+
+	def getJaccard(self, querry_sequence):
+		querry_signature = self._calculator.run(querry_sequence)
+		return self.approximateJaccard(self.ref_signature, querry_signature)
+
+	def approximateJaccard(self, sig1, sig2):
+		"""
+		Calculate an approximate Jaccard index based on minhash Sketchs
+		TODO: Assert that sig1 and sig2 were calculated with the same hash functions, otherwise
+		the approimation is invalid.
+		:param list(int) sig1:
+		:param sig2
+		"""
+		sig1 = np.array(sig1)
+		sig2 = np.array(sig2)
+		return (float(sum(sig1 == sig2)) / float(self._n_hash_functions))
+
+
 if __name__ == '__main__':
 
-	modes = [GreedyPairSketchDirector, SingleSketchDirector, ExhaustivePairSketchDirector]
+	modes = [SingleSketchCalculator, ExhaustivePairSketchCalculator]
 	opts= parse_cmdline_params(sys.argv[1:])
-	
-	for mode in modes:
-		if mode.canCalculate(opts):
-			director = mode(opts.word_size, opts.n_hashing_functions, MinHash)
-			break
-		else:
-			continue
 
-	sketch1 = director.run(opts.reference_sequence)
-	sketch2 = director.run(opts.querry_string)
-	jaccard = director._min_hash.approximateJaccard(sketch1, sketch2)
+	spire = Spire(opts.word_size, opts.n_hashing_functions, opts.mode)
+	spire.loadRefSignature(opts.reference_sequence)
+
+	jaccard = spire.getJaccard(opts.querry_string)
 	print jaccard

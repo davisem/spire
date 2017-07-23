@@ -31,10 +31,6 @@ class MinHash(object):
 		self._n_hash_functions = n_hash_functions
 		self._hash_permutations = HashFactory(Hasher, n_hash_functions).getHashes()
 
-	@staticmethod
-	def getMinimumHash(hashes_kmer):
-		return min(hashes_kmer, key=operator.itemgetter(0))
-
 	def calcSketch(self, kmers):
 		"""
 		Calculates a minhash Sketch given a set of kmers.
@@ -45,28 +41,13 @@ class MinHash(object):
 		sketch = []
 		i = 0
 		print("Calculating {} hashes across {} kmers".format(len(self._hash_permutations), len(kmers)))
+		
 		for hasher in self._hash_permutations:
-			if i % 20 == 0:
+			if i % 100 == 0:
 				print ("Calculated for {} hash functions so far".format(i))
 			
-			hashes = [(hasher.hashIt(kmer.integer_val), kmer) for kmer in kmers]
-			min_hash = self.getMinimumHash(hashes)
+			sketch.append(min([hasher.hashIt(kmer.integer_val) for kmer in kmers]))
 			
-			sketch.append(min_hash)
 			i += 1
 		
 		return sketch
-
-	def approximateJaccard(self, sig1, sig2):
-		"""
-		Calculate an approximate Jaccard index based on minhash Sketchs
-		TODO: Assert that sig1 and sig2 were calculated with the same hash functions, otherwise
-		the approimation is invalid.
-		:param list(int) sig1:
-		:param sig2
-		"""
-		
-		sig1 = np.array(sig1)
-		sig2 = np.array(sig2)
-		return (float(sum(sig1 == sig2)) / float(self._n_hash_functions))
-

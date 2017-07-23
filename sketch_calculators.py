@@ -22,7 +22,7 @@ from hashers.chash import Hasher
 
 
 
-class SketchDirector(object):
+class SketchCalculator(object):
 	"""Flow control for generating minhash Sketchs for a given sequence"""
 
 	__metaclass__ = ABCMeta
@@ -66,11 +66,11 @@ class SketchDirector(object):
 		return Counter(similar_reads)
 
 
-class GreedyPairSketchDirector(SketchDirector):
+class GreedyPairSketchCalculator(SketchCalculator):
 
 
 	def __init__(self, word_size, n_hashing_functions, hasher):
-		super(GreedyPairSketchDirector, self).__init__(word_size, n_hashing_functions, hasher)
+		super(GreedyPairSketchCalculator, self).__init__(word_size, n_hashing_functions, hasher)
 	
 	def getSketch(self, seq):
 		"""
@@ -90,14 +90,16 @@ class GreedyPairSketchDirector(SketchDirector):
 		return [x[0] for x in self._min_hash.calcSketch(kmer_pairs)]
 
 	@classmethod
-	def canCalculate(cls, opts):
-		return opts.mode == "greedy"
+	def canCalculate(cls, mode):
+		return mode == "greedy"
 
 
-class SingleSketchDirector(SketchDirector):
+class SingleSketchCalculator(SketchCalculator):
+
+	MODE_KEY = "fast"
 	
 	def __init__(self, word_size, n_hashing_functions, hasher):
-		super(SingleSketchDirector, self).__init__(word_size, n_hashing_functions, hasher)
+		super(SingleSketchCalculator, self).__init__(word_size, n_hashing_functions, hasher)
 
 	def getSketch(self, seq):
 		"""
@@ -106,17 +108,19 @@ class SingleSketchDirector(SketchDirector):
 		:return list(int): A list representing the minhash Sketch
 		"""
 		window = Window(seq, self.word_size, 2)
-		return [x[0] for x in self._min_hash.calcSketch(window.kmers)]
+		return self._min_hash.calcSketch(window.kmers)
 
 	@classmethod
-	def canCalculate(cls, opts):
-		return opts.mode == "fast"
+	def canCalculate(cls, mode):
+		return mode == cls.MODE_KEY
 
 
-class ExhaustivePairSketchDirector(SketchDirector):
+class ExhaustivePairSketchCalculator(SketchCalculator):
+	
+	MODE_KEY = "deep"
 
 	def __init__(self, word_size, n_hashing_functions, hasher):
-		super(ExhaustivePairSketchDirector, self).__init__(word_size, n_hashing_functions, hasher)
+		super(ExhaustivePairSketchCalculator, self).__init__(word_size, n_hashing_functions, hasher)
 
 
 	def getSketch(self, seq):
@@ -127,11 +131,10 @@ class ExhaustivePairSketchDirector(SketchDirector):
 		"""
 		
 		window = Window(seq, self.word_size, 2)
-		
 	
 		pairs = [pair for kmer in window.kmers for pair in window.makeKmerPairs(kmer)]
-		return [x[0] for x in self._min_hash.calcSketch(pairs)]
+		return self._min_hash.calcSketch(pairs)
 
 	@classmethod
-	def canCalculate(cls, opts):
-		return opts.mode == "deep"
+	def canCalculate(cls, mode):
+		return mode == cls.MODE_KEY
