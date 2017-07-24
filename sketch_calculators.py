@@ -5,7 +5,7 @@ __version__ = ""
 __maintainer__ = "Eric Davis"
 __email__ = "emdavis48@gmail.com"
 __status__ = ""
-__modname__ = "min_hash.py"
+__modname__ = "sketch_calculators.py"
 
 
 import sys
@@ -47,15 +47,9 @@ class SketchCalculator(object):
 
 
 class SingleSketchCalculator(SketchCalculator):
+	"""Calculates a min_hash sketch using single kmers"""
 
 	MODE_KEY = "fast"
-	
-	def __init__(self, word_size, n_hashing_functions):
-		"""
-		Init method for class
-		"""
-		super(SingleSketchCalculator, self).__init__(word_size, n_hashing_functions)
-		self.word_size = self.setWordSize(word_size)
 
 	def setWordSize(self, word_size):
 		return 2 * word_size
@@ -76,13 +70,10 @@ class SingleSketchCalculator(SketchCalculator):
 
 
 class ExhaustivePairSketchCalculator(SketchCalculator):
+	"""Calculate the sketch using kmer pairs plus distances"""
 	
 	MODE_KEY = "deep"
 	PAIR_DISTANCE = 50
-
-	def __init__(self, word_size, n_hashing_functions):
-		super(ExhaustivePairSketchCalculator, self).__init__(word_size, n_hashing_functions)
-
 
 	def getSketch(self, seq):
 		"""

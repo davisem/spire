@@ -6,13 +6,12 @@ __credits__ = ["Eric Davis"]
 __version__ = ""
 __maintainer__ = "Eric Davis"
 __email__ = "emdavis48@gmail.com"
-__status__ = ""
 __modname__ = 'kmer.py'
 
-
-import sys
 import math
+import sys
 import numpy as np
+
 from collections import defaultdict
 from abc import ABCMeta, abstractmethod, abstractproperty
 
@@ -58,6 +57,11 @@ class KmerSingle(Kmer):
 	__slots__ = ['seq', 'idx', 'integer_val']
 	
 	def __init__(self, idx, seq):
+		"""
+		Init method for class
+		:param int idx: Index of the kmer in the sequence
+		:param str seq: The sequence of the kmer
+		"""
 		self.seq = seq
 		self.integer_val = hash(seq)
 		self.idx = idx
@@ -84,6 +88,10 @@ class KmerPair(Kmer):
 	__slots__ = ['kmer1', 'kmer2', 'distance', 'integer_val']
 
 	def __init__(self, kmer1, kmer2):
+		"""
+		:param KmerSingle kmer1: The first kmer in the pair
+		:param KmerSingle kmer2: The second kmer in the pair
+		"""
 		self.kmer1 = kmer1.seq
 		self.kmer2 = kmer2.seq
 		self.distance = kmer2.idx - kmer1.idx
@@ -150,8 +158,6 @@ class Window(object):
 		:param int distance: A distance threshold to server as a bound on the kmer pair enumeration.
 		:return list(KmerPair): A list of KmerPairs
 		"""
-	    
-
 		kmerpairs = {}
 
 		distance = min(len(self.seq), distance)

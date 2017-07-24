@@ -3,6 +3,7 @@ __copyright__ = ""
 __credits__ = ["Eric Davis"]
 __maintainer__ = "Eric Davis"
 __email__ = "emdavis48@gmail.com"
+__modname__ = 'spire_tests.py'
 
 
 import cProfile

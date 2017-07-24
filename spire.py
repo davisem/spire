@@ -5,6 +5,7 @@ __copyright__ = ""
 __credits__ = ["Eric Davis"]
 __maintainer__ = "Eric Davis"
 __email__ = "emdavis48@gmail.com"
+__modname__ = 'spire.py'
 
 
 import argparse
@@ -26,9 +27,6 @@ def parse_cmdline_params(cmdline_params):
 
     parser.add_argument('-r', '--reference_sequence', type=str, required=True,
     					help='Please provide a reference string')
-
-    parser.add_argument('-p', '--perturb_input', type=float, 
-    					help='probabilty of a sequencing error at any given base')
 
     parser.add_argument('-n', '--n_hashing_functions', type=int, default=100, 
     					help='Number of hashing f(x) to considering when calculating a signature')
@@ -84,6 +82,7 @@ class Spire(object):
 		"""
 		Get the jaccard similarity for a query sequence
 		:param str query_sequence: The sequence to calculate the jaccard against the reference
+		:return float: The jaccard
 		"""
 		query_signature = self._calculator.getSketch(query_sequence)
 		return self.approximateJaccard(self.ref_signature, query_signature)

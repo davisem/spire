@@ -4,15 +4,14 @@ __credits__ = ["Eric Davis"]
 __version__ = ""
 __maintainer__ = "Eric Davis"
 __email__ = "emdavis48@gmail.com"
-__status__ = ""
 __modname__ = "min_hash.py"
 
-import sys
 import numpy as np
 import operator
-from collections import defaultdict, Counter
-from abc import ABCMeta, abstractmethod
+import sys
 
+from abc import ABCMeta, abstractmethod
+from collections import defaultdict, Counter
 from hasher import HashFactory
 from kmer import Kmer, Window, Read
 
