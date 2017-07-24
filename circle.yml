@@ -10,5 +10,5 @@ dependencies:
     - python setup.py build_ext --inplace
 
 test:
-  override:
+  pre:
     - python spire.py -q ATCGGATCGAATCG -r ATCGATCGATCGATCG -k 3 -m deep -n 500

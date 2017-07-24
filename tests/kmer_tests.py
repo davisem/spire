@@ -12,13 +12,13 @@ __modname__ = 'kmer_tests.py'
 
 import unittest
 
-from kmer import Kmer, Window
+from kmer import KmerSingle, KmerPair, Window
 
 
-class TestKmer(unittest.TestCase):
+class TestKmerSingle(unittest.TestCase):
 
 	def setUp(self):
-		self.kmer = Kmer(0, "AAAT")
+		self.kmer = KmerSingle(0, "AAAT")
 
 	def test_Str(self):
 		"""Test that we can get the kmer in string format"""
@@ -26,30 +26,33 @@ class TestKmer(unittest.TestCase):
 
 	def test_GreaterThan(self):
 		"""Test that the greater than functionality works according to the index"""
-		greater_kmer = Kmer(2, "AAA")
+		greater_kmer = KmerSingle(2, "AAA")
 		self.assertFalse(greater_kmer > self.kmer)
 
 
 class TestWindow(unittest.TestCase):
 
 	def setUp(self):
-		self.window = Window("AAATTTCCCGGG", 3)
+		self.window = Window("AAAT", 2, 2)
 
 	def test_makeWords(self):
 		"""Test that kmers are generated correctly"""
 		kmer_values = ['AA', 'AA', 'AT']
-		expect = [Kmer(i, x) for i, x in enumerate(kmer_values)]
-		words = Window.makeWords('AAAT', 2)
-		self.assertListEqual(words, expect)
+		expect = [KmerSingle(i, x) for i, x in enumerate(kmer_values)]
+		words = self.window.makeWords("AAAT")
 
-	def test_getDownstreamKmers(self):
-		"""Test that we can get the next downstream kmer from the string"""
-		kmer = Kmer(0, "AAA")
-		for i, kmer in enumerate(self.window.getDownstreamKmers(kmer)):
-			self.assertEqual(kmer, self.window[i+1])
+	def test_makePairs(self):
+		"""Test that the pairs are correctly generated"""
+		k1 = KmerSingle(0, 'AA')
+		k2 = KmerSingle(1, 'AC')
+		k3 = KmerSingle(2, 'CT')
+		
+		p1 = KmerPair(k1, k2)
+		p2 = KmerPair(k1, k3)
+		p3 = KmerPair(k2, k3)
 
-	def test_makeKmerPairs(self):
-		"""Test that we can build kmer pairs correctly."""
-		kmer = Kmer(0, "AAT")
-		kmer_pairs = self.window.makeKmerPairs(kmer)
-		self.assertEquals(kmer_pairs[0].seq, "AATATT2")
+		expect = [p1, p2, p3]
+		window = Window("AACT", 2, 2)
+		words = window.makeKmerPairs("AACT", 3)
+		self.assertTrue(len(expect), len(words))
+
