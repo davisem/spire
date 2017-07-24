@@ -110,4 +110,4 @@ if __name__ == '__main__':
 	spire.loadRefSignature(opts.reference_sequence)
 
 	jaccard = spire.getJaccard(opts.query_string)
-	print jaccard
+	sys.stdout.write("Spire Approximated Jaccard: {}\n".format(jaccard))
