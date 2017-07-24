@@ -16,6 +16,7 @@ from abc import ABCMeta, abstractmethod
 
 from hasher import HashFactory
 from kmer import Kmer, Window, Read
+from min_hash import MinHash
 
 import pyximport; pyximport.install()
 from hashers.chash import Hasher
@@ -25,9 +26,12 @@ from hashers.chash import Hasher
 class SketchCalculator(object):
 	"""Flow control for generating minhash Sketchs for a given sequence"""
 
+	MIN_HASH = MinHash
+	N_BUCKETS = 2
+
 	__metaclass__ = ABCMeta
 
-	def __init__(self, word_size, n_hashing_functions, hasher):
+	def __init__(self, word_size, n_hashing_functions):
 		"""
 		Init method for class
 		:param int word_size: The kmer size to use
@@ -35,71 +39,26 @@ class SketchCalculator(object):
 		"""
 		self.word_size = word_size
 		self._n_hashing_functions = n_hashing_functions
-		self._min_hash = hasher(n_hashing_functions)
-		self._Sketch_cache = {x:defaultdict(list) for x in xrange(n_hashing_functions)}
+		self._min_hash = self.MIN_HASH(n_hashing_functions)
 
 	@abstractmethod
 	def getSketch(self):
 		pass
-
-	def run(self, seq):
-		Sketch = self.getSketch(seq)
-		self.storeSketch(seq, Sketch)
-		return Sketch
-
-	def storeSketch(self, seq, Sketch):
-		for i, min_mer in enumerate(Sketch):
-			self._Sketch_cache[i][min_mer].append(seq)
-
-	def querryRead(self, Sketch):
-		for i, min_mer in enumerate(Sketch):
-			yield self._Sketch_cache[i][min_mer]
-
-	def getSimilarReads(self, read):
-		
-		similar_reads = []
-		for q_read_list in self.querryRead(read.sketch):
-			for q_read in q_read_list:
-				if q_read != read.seq:
-					similar_reads.append(q_read)
-		
-		return Counter(similar_reads)
-
-
-class GreedyPairSketchCalculator(SketchCalculator):
-
-
-	def __init__(self, word_size, n_hashing_functions, hasher):
-		super(GreedyPairSketchCalculator, self).__init__(word_size, n_hashing_functions, hasher)
-	
-	def getSketch(self, seq):
-		"""
-		Gets the minhash Sketch for a given sequence
-		:param str seq: A DNA sequence
-		:return list(int): A list representing the minhash Sketch
-		"""
-		
-		window = Window(seq, self.word_size, 2)
-		
-		primary_Sketch = self._min_hash.calcSketch(window.kmers)
-		kmer_pairs = []
-		
-		for min_hash in primary_Sketch:
-			kmer_pairs.extend(window.makeKmerPairs(min_hash[1]))
-		
-		return [x[0] for x in self._min_hash.calcSketch(kmer_pairs)]
-
-	@classmethod
-	def canCalculate(cls, mode):
-		return mode == "greedy"
 
 
 class SingleSketchCalculator(SketchCalculator):
 
 	MODE_KEY = "fast"
 	
-	def __init__(self, word_size, n_hashing_functions, hasher):
-		super(SingleSketchCalculator, self).__init__(word_size, n_hashing_functions, hasher)
+	def __init__(self, word_size, n_hashing_functions):
+		"""
+		Init method for class
+		"""
+		super(SingleSketchCalculator, self).__init__(word_size, n_hashing_functions)
+		self.word_size = self.setWordSize(word_size)
+
+	def setWordSize(self, word_size):
+		return 2 * word_size
 
 	def getSketch(self, seq):
 		"""
@@ -107,8 +66,9 @@ class SingleSketchCalculator(SketchCalculator):
 		:param str seq: A DNA sequence
 		:return list(int): A list representing the minhash Sketch
 		"""
-		window = Window(seq, self.word_size, 2)
-		return self._min_hash.calcSketch(window.kmers)
+		window = Window(seq, self.word_size, self.N_BUCKETS)
+		kmers = window.makeWords(seq)
+		return self._min_hash.calcSketch(kmers)
 
 	@classmethod
 	def canCalculate(cls, mode):
@@ -118,9 +78,10 @@ class SingleSketchCalculator(SketchCalculator):
 class ExhaustivePairSketchCalculator(SketchCalculator):
 	
 	MODE_KEY = "deep"
+	PAIR_DISTANCE = 50
 
-	def __init__(self, word_size, n_hashing_functions, hasher):
-		super(ExhaustivePairSketchCalculator, self).__init__(word_size, n_hashing_functions, hasher)
+	def __init__(self, word_size, n_hashing_functions):
+		super(ExhaustivePairSketchCalculator, self).__init__(word_size, n_hashing_functions)
 
 
 	def getSketch(self, seq):
@@ -130,9 +91,8 @@ class ExhaustivePairSketchCalculator(SketchCalculator):
 		:return list(int): A list representing the minhash Sketch
 		"""
 		
-		window = Window(seq, self.word_size, 2)
-	
-		pairs = [pair for kmer in window.kmers for pair in window.makeKmerPairs(kmer)]
+		window = Window(seq, self.word_size, self.N_BUCKETS)
+		pairs = window.makeKmerPairs(seq, self.PAIR_DISTANCE)
 		return self._min_hash.calcSketch(pairs)
 
 	@classmethod
