@@ -44,7 +44,7 @@ reference | `A reference string to search against`
 query_string| `A string to compare to the reference`
 n_hashing_functions | `Number of random hashing functions to use`
 word_size | `Word size with which input strings will be enumerated`
-mode | `[Fast, Deep] Whether to enumerate kmers or kmer-pairs`
+mode | `[fast, deep] Whether to enumerate kmers (fast) or kmer-pairs (deep)`
 
 Contributors
 ============
