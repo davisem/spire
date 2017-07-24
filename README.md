@@ -2,7 +2,7 @@
 
 Spire
 =========================
-An experimental, long read genome-assembler that leverages k-mer pairs along with distance information to map highly error-prone reads from long read sequencing platforms with high fidelity.
+An experimental, long read genome-assembler that leverages k-mer pairs along with distance information to map error-prone reads with high fidelity. This application is very much a work in progress, and consists of a simple command line interface for robustly approximating a Jaccard index between two strings. More to come...
 
 Prerequisites
 -------------
