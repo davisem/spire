@@ -68,7 +68,7 @@ class Spire(object):
 			
 				return calculator(self._word_size, self._n_hash_functions)
 
-		raise ValueError("No calculator was found to hande mode: \"{}\"".format(mode))
+		raise ValueError("No calculator was found to handle mode: \"{}\"".format(mode))
 
 
 	def loadRefSignature(self, ref):

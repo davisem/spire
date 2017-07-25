@@ -19,3 +19,9 @@ class SketchCalculatorTests(unittest.TestCase):
 		Calculator = SingleSketchCalculator(3, expect_length)
 		sketch = Calculator.getSketch(test_seq)
 		self.assertEquals(len(sketch), expect_length)
+
+	def test_setWordSize(self):
+		"""Test that the word size for a pair calculator is double the word size of a single calculator"""
+		pair_calculator = ExhaustivePairSketchCalculator(2, 1)
+		single_calculator = SingleSketchCalculator(2, 1)
+		self.assertEqual(pair_calculator.word_size * 2, single_calculator.word_size)

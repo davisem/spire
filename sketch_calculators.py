@@ -37,12 +37,18 @@ class SketchCalculator(object):
 		:param int word_size: The kmer size to use
 		:param n_hashing_functions: The number of hashing functions to use.
 		"""
-		self.word_size = word_size
+		self.word_size = self._setWordSize(word_size)
 		self._n_hashing_functions = n_hashing_functions
 		self._min_hash = self.MIN_HASH(n_hashing_functions)
 
 	@abstractmethod
 	def getSketch(self):
+		"""Calculates a min_hash sketch"""
+		pass
+
+	@abstractmethod
+	def _setWordSize(self, word_size):
+		"""Set the word size from which kmers are enumerated"""
 		pass
 
 
@@ -51,7 +57,12 @@ class SingleSketchCalculator(SketchCalculator):
 
 	MODE_KEY = "fast"
 
-	def setWordSize(self, word_size):
+	def _setWordSize(self, word_size):
+		"""
+		Setter for the words size
+		:param int word_size: The word size
+		:return int: The word size to set
+		"""
 		return 2 * word_size
 
 	def getSketch(self, seq):
@@ -85,6 +96,14 @@ class ExhaustivePairSketchCalculator(SketchCalculator):
 		window = Window(seq, self.word_size, self.N_BUCKETS)
 		pairs = window.makeKmerPairs(seq, self.PAIR_DISTANCE)
 		return self._min_hash.calcSketch(pairs)
+
+	def _setWordSize(self, word_size):
+		"""
+		Setter for the words size
+		:param int word_size: The word size
+		:return int: The word size to set
+		"""
+		return word_size
 
 	@classmethod
 	def canCalculate(cls, mode):
